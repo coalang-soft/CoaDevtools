@@ -1,0 +1,56 @@
+#use JUI
+
+def createFunction(instructions){
+    File("dynamic.txt").writeString(instructions);
+    asm {
+        putM dynamic.txt
+        ret
+    }
+}
+
+var functions = [];
+var codes = [];
+
+def addFunc(in, list){
+    codes.push(in.getText());
+    functions.push(createFunction(in.getText()));
+    list.getItems().add("function " & (functions.length() - 1).toString());
+}
+
+def runFunc(in){
+    createFunction(in.getText())();
+}
+
+Launcher.launch({|win|
+    var input = JUI.control("TextArea")();
+    var list = JUI.control("ListView")();
+
+    list.getSelectionModel().selectedIndexProperty().addListener({||
+        var i = list.getSelectionModel().getSelectedIndex();
+        if(i == 0){
+            input.setEditable(true);
+            input.setText("");
+            return null;
+        }
+        input.setEditable(false);
+        input.setText(codes[i - 1]);
+    });
+
+    list.getItems().add("Live");
+
+    var split = JUI.control("SplitPane")([input,list]);
+
+    win.setScene(JUI.Scene(JUI.layout("BorderPane")(
+        split,
+        "bottom" => JUI.layout("HBox")([
+            JUI.control("Button")(
+                "Create function",
+                "onAction" => addFunc.bind(input, list)
+            ),JUI.control("Button")(
+                "Run",
+                "onAction" => runFunc.bind(input)
+            )
+        ])
+    )));
+    win.show();
+});
