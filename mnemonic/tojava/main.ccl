@@ -1,5 +1,7 @@
 #use File
 
+println(" ");
+
 var join = java("java.lang.String").join;
 var format = java("java.lang.String").format;
 
@@ -12,21 +14,29 @@ var commandList = map();
 commandList.put("putA", "push(emptyArray());");
 commandList.put("__mkvar", "createVar(pop(), \"%1$s\");");
 commandList.put("load", "push(load(\"%1$s\"));");
-commandList.put("__invoke1", "{Value param = pop(); invoke(pop(), param);}");
+commandList.put("__invoke1", "{Value param = pop(); push(invoke(pop(), param));}");
 commandList.put("get", "push(property(pop(), \"%1$s\"));");
 commandList.put("putS", "push(string(\"%1$s\"));");
 commandList.put("__arrpush1", "push(pushArray(pop(), pop()));");
 commandList.put("pop", "pop();");
+commandList.put("__invoke0", "push(invoke(pop()));");
+commandList.put("__invoke2", "{Value param2 = pop(); Value param1 = pop(); push(invoke(pop(), param1, param2));}");
 
 def transpileLine(line){
 	var split = line.split(" ");
 	var command = split.0.trim();
-	var argument = join(" ", split.cut(1));
+	if(command == "putM"){
+		fileList.push()
+	}
+	var argument = ("." & join(" ", split.cut(1))).trim().substring(1);
+	if(argument.endsWith("\\")){
+		argument = argument.substring(0, argument.length() - 1);
+	}
 	
 	var info = commandList.get(command);
 	if(info.type == "undefined"){
 		println(command);
-		return null;
+		return "//TODO: unable to compile " & line.trim();
 	}
         return format(info, [argument]);
 }
@@ -35,10 +45,11 @@ def transpileFile(f){
 	var javaParts = [];
 	var fileContent = File(f).buildString();
 	({|line|
-		javaParts.push(transpileLine(line));
+		//javaParts.push("\t//" & line);
+		javaParts.push("\t/*" & line.trim() & "*/" & transpileLine(line));
 	}).for(array(fileContent.split("\n")));
 	
-	println(javaParts);
+	return join("\n", javaParts);
 }
 
-transpileFile(inputFile);
+File("Out.java").writeString("public Value main(){\n" & transpileFile(inputFile) & "\n}");
