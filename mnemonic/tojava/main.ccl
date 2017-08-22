@@ -1,0 +1,44 @@
+#use File
+
+var join = java("java.lang.String").join;
+var format = java("java.lang.String").format;
+
+//Every needed .cl0 File
+var fileList = [];
+var inputFile = "F:/Info/CCL/CclToJava/main.cc0";
+
+var commandList = map();
+
+commandList.put("putA", "push(emptyArray());");
+commandList.put("__mkvar", "createVar(pop(), \"%1$s\");");
+commandList.put("load", "push(load(\"%1$s\"));");
+commandList.put("__invoke1", "{Value param = pop(); invoke(pop(), param);}");
+commandList.put("get", "push(property(pop(), \"%1$s\"));");
+commandList.put("putS", "push(string(\"%1$s\"));");
+commandList.put("__arrpush1", "push(pushArray(pop(), pop()));");
+commandList.put("pop", "pop();");
+
+def transpileLine(line){
+	var split = line.split(" ");
+	var command = split.0.trim();
+	var argument = join(" ", split.cut(1));
+	
+	var info = commandList.get(command);
+	if(info.type == "undefined"){
+		println(command);
+		return null;
+	}
+        return format(info, [argument]);
+}
+
+def transpileFile(f){
+	var javaParts = [];
+	var fileContent = File(f).buildString();
+	({|line|
+		javaParts.push(transpileLine(line));
+	}).for(array(fileContent.split("\n")));
+	
+	println(javaParts);
+}
+
+transpileFile(inputFile);
